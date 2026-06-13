@@ -147,10 +147,6 @@ class Command(BaseCommand):
 
         # ── Summary ────────────────────────────────────────
         total_flats = Flat.objects.count()
-        wing_a_bal  = sum(
-            f.balance for f in Flat.objects.filter(wing=wing_a)
-            if hasattr(f, 'owner')
-        )
 
         self.stdout.write(self.style.SUCCESS(
             f'✅  {created_flats} flats created  |  {created_dues} dues generated'
