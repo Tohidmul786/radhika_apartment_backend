@@ -148,7 +148,17 @@ class FlatReceiptPDFView(APIView):
             return Response({'error':'Flat not found'}, status=status.HTTP_404_NOT_FOUND)
 
         owner    = getattr(flat, 'owner', None)
-        payments = flat.payments.filter(status='completed').order_by('-payment_date')[:10]
+
+        # Optional month/year filter for payment history shown in the receipt
+        month = request.query_params.get('month')
+        year  = request.query_params.get('year')
+
+        payments_qs = flat.payments.filter(status='completed').order_by('-payment_date')
+        if month:
+            payments_qs = payments_qs.filter(payment_date__month=int(month))
+        if year:
+            payments_qs = payments_qs.filter(payment_date__year=int(year))
+        payments = payments_qs[:50] if (month or year) else payments_qs[:10]
 
         buffer = io.BytesIO()
         doc    = SimpleDocTemplate(buffer, pagesize=A4,
@@ -226,7 +236,18 @@ class FlatReceiptPDFView(APIView):
         story.append(Spacer(1,20))
 
         # ── Payment History ──
-        story.append(Paragraph('<b><font size=11 color="#0c1f3f">Recent Payment History</font></b>',
+        MONTH_NAMES = ['','January','February','March','April','May','June',
+                       'July','August','September','October','November','December']
+        period_label = ''
+        if month or year:
+            if month: period_label += MONTH_NAMES[int(month)]
+            if year:  period_label += f' {year}'
+            period_label = period_label.strip()
+            history_title = f"Payment History — {period_label}"
+        else:
+            history_title = "Recent Payment History (Last 10)"
+
+        story.append(Paragraph(f'<b><font size=11 color="#0c1f3f">{history_title}</font></b>',
                                 styles['Normal']))
         story.append(Spacer(1,8))
 
@@ -255,9 +276,16 @@ class FlatReceiptPDFView(APIView):
                 ('ROWBACKGROUNDS',(0,1),(-1,-1),[colors.white, colors.HexColor('#f0f9ff')]),
             ]))
             story.append(pay_tbl)
+
+            if month or year:
+                total_period = sum(float(p.amount) for p in payments)
+                story.append(Spacer(1,6))
+                story.append(Paragraph(
+                    f'<font size=10 color="#15803d"><b>Total Paid in {period_label}: Rs. {total_period:,.0f}</b></font>',
+                    styles['Normal']))
         else:
-            story.append(Paragraph('<font color="grey">No payment records found.</font>',
-                                    styles['Normal']))
+            msg = f'No payments found for {period_label}.' if (month or year) else 'No payment records found.'
+            story.append(Paragraph(f'<font color="grey">{msg}</font>', styles['Normal']))
 
         story.append(Spacer(1,30))
         story.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor('#e2e8f0')))
@@ -270,7 +298,10 @@ class FlatReceiptPDFView(APIView):
         doc.build(story)
         buffer.seek(0)
         resp = HttpResponse(buffer, content_type='application/pdf')
-        resp['Content-Disposition'] = f'attachment; filename="receipt_{flat_number}_{datetime.date.today()}.pdf"'
+        receipt_suffix = datetime.date.today().isoformat()
+        if month or year:
+            receipt_suffix = f"{year or datetime.date.today().year}-{(month or 'all').zfill(2) if month else 'all'}"
+        resp['Content-Disposition'] = f'attachment; filename="receipt_{flat_number}_{receipt_suffix}.pdf"'
         resp['Access-Control-Allow-Origin'] = '*'
         return resp
 
