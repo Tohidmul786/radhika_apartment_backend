@@ -127,6 +127,7 @@ SIMPLE_JWT = {
 }
 
 # CORS
+# CORS
 CORS_ALLOWED_ORIGINS = config(
     'CORS_ALLOWED_ORIGINS',
     default='http://localhost:3000,http://localhost:5173'
