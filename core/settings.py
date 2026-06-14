@@ -127,13 +127,10 @@ SIMPLE_JWT = {
 }
 
 # CORS
-# CORS
-CORS_ALLOWED_ORIGINS = config(
-    'CORS_ALLOWED_ORIGINS',
-    default='http://localhost:3000,http://localhost:5173'
-).split(',')
-CORS_ALLOW_CREDENTIALS = True
+# CORS# CORS
 CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL_ORIGINS', default=False, cast=bool)
+CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS',default='http://localhost:3000,http://localhost:5173').split(',')
+CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = [
     'accept',
     'accept-encoding',
@@ -145,9 +142,18 @@ CORS_ALLOW_HEADERS = [
     'x-csrftoken',
     'x-requested-with',
 ]
-# Trust proxy headers (needed on Render/Heroku for HTTPS detection)
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+
+# Trust proxy headers
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='https://*.onrender.com,https://*.vercel.app').split(',')
+CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS',default='https://*.onrender.com,https://*.vercel.app').split(',')
 
 # ── Email (Gmail SMTP) ────────────────────────────────────────────────
 EMAIL_BACKEND       = config('EMAIL_BACKEND', default='django.core.mail.backends.smtp.EmailBackend')
