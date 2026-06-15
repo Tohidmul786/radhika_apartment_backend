@@ -148,7 +148,17 @@ class FlatReceiptPDFView(APIView):
             return Response({'error':'Flat not found'}, status=status.HTTP_404_NOT_FOUND)
 
         owner    = getattr(flat, 'owner', None)
-        payments = flat.payments.filter(status='completed').order_by('-payment_date')[:10]
+
+        # Optional month/year filter for payment history shown in the receipt
+        month = request.query_params.get('month')
+        year  = request.query_params.get('year')
+
+        payments_qs = flat.payments.filter(status='completed').order_by('-payment_date')
+        if month:
+            payments_qs = payments_qs.filter(payment_date__month=int(month))
+        if year:
+            payments_qs = payments_qs.filter(payment_date__year=int(year))
+        payments = payments_qs[:50] if (month or year) else payments_qs[:10]
 
         buffer = io.BytesIO()
         doc    = SimpleDocTemplate(buffer, pagesize=A4,
@@ -226,7 +236,18 @@ class FlatReceiptPDFView(APIView):
         story.append(Spacer(1,20))
 
         # ── Payment History ──
-        story.append(Paragraph('<b><font size=11 color="#0c1f3f">Recent Payment History</font></b>',
+        MONTH_NAMES = ['','January','February','March','April','May','June',
+                       'July','August','September','October','November','December']
+        period_label = ''
+        if month or year:
+            if month: period_label += MONTH_NAMES[int(month)]
+            if year:  period_label += f' {year}'
+            period_label = period_label.strip()
+            history_title = f"Payment History — {period_label}"
+        else:
+            history_title = "Recent Payment History (Last 10)"
+
+        story.append(Paragraph(f'<b><font size=11 color="#0c1f3f">{history_title}</font></b>',
                                 styles['Normal']))
         story.append(Spacer(1,8))
 
@@ -255,9 +276,16 @@ class FlatReceiptPDFView(APIView):
                 ('ROWBACKGROUNDS',(0,1),(-1,-1),[colors.white, colors.HexColor('#f0f9ff')]),
             ]))
             story.append(pay_tbl)
+
+            if month or year:
+                total_period = sum(float(p.amount) for p in payments)
+                story.append(Spacer(1,6))
+                story.append(Paragraph(
+                    f'<font size=10 color="#15803d"><b>Total Paid in {period_label}: Rs. {total_period:,.0f}</b></font>',
+                    styles['Normal']))
         else:
-            story.append(Paragraph('<font color="grey">No payment records found.</font>',
-                                    styles['Normal']))
+            msg = f'No payments found for {period_label}.' if (month or year) else 'No payment records found.'
+            story.append(Paragraph(f'<font color="grey">{msg}</font>', styles['Normal']))
 
         story.append(Spacer(1,30))
         story.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor('#e2e8f0')))
@@ -270,7 +298,10 @@ class FlatReceiptPDFView(APIView):
         doc.build(story)
         buffer.seek(0)
         resp = HttpResponse(buffer, content_type='application/pdf')
-        resp['Content-Disposition'] = f'attachment; filename="receipt_{flat_number}_{datetime.date.today()}.pdf"'
+        receipt_suffix = datetime.date.today().isoformat()
+        if month or year:
+            receipt_suffix = f"{year or datetime.date.today().year}-{(month or 'all').zfill(2) if month else 'all'}"
+        resp['Content-Disposition'] = f'attachment; filename="receipt_{flat_number}_{receipt_suffix}.pdf"'
         resp['Access-Control-Allow-Origin'] = '*'
         return resp
 
@@ -309,8 +340,18 @@ class ExportExcelView(APIView):
         ws['A1'].alignment = center
         ws.row_dimensions[1].height = 28
 
+        month = request.query_params.get('month')
+        year  = request.query_params.get('year')
+
         ws.merge_cells('A2:I2')
-        ws['A2'] = f"Generated: {datetime.date.today().strftime('%d %B %Y')} | Wing: {wing or 'All'} | Status: {status_filter or 'All'}"
+        summary_parts = [f"Generated: {datetime.date.today().strftime('%d %B %Y')}",
+                          f"Wing: {wing or 'All'}", f"Status: {status_filter or 'All'}"]
+        if month or year:
+            MONTH_NAMES = ['','January','February','March','April','May','June',
+                           'July','August','September','October','November','December']
+            label = (MONTH_NAMES[int(month)] if month else '') + (f' {year}' if year else '')
+            summary_parts.append(f"Payments Month: {label.strip()}")
+        ws['A2'] = " | ".join(summary_parts)
         ws['A2'].font      = Font(name='Calibri', size=10, italic=True, color='6B7280')
         ws['A2'].alignment = center
 
@@ -347,12 +388,42 @@ class ExportExcelView(APIView):
                 if fill: cell.fill = fill
                 if col_idx in [7,8]: cell.number_format = '#,##0.00'
 
-        ws2 = wb.create_sheet("Payment History")
+        # ── Sheet 2: Payment History (filterable by month/year) ──
+        payments_qs = Payment.objects.select_related('flat','flat__owner','received_by').order_by('-payment_date')
+        if month:
+            payments_qs = payments_qs.filter(payment_date__month=int(month))
+        if year:
+            payments_qs = payments_qs.filter(payment_date__year=int(year))
+
+        sheet2_title = "Payment History"
+        if month or year:
+            MONTH_NAMES = ['','January','February','March','April','May','June',
+                           'July','August','September','October','November','December']
+            label = ''
+            if month: label += MONTH_NAMES[int(month)]
+            if year:  label += f' {year}'
+            sheet2_title = f"Payments - {label.strip()}"
+
+        ws2 = wb.create_sheet(sheet2_title[:31])  # Excel sheet name max 31 chars
+
+        # Title row for sheet 2
+        ws2.merge_cells('A1:H1')
+        title2 = "Payment History"
+        if month or year:
+            title2 += f" — {sheet2_title.replace('Payments - ','')}"
+        ws2['A1'] = title2
+        ws2['A1'].font      = Font(name='Calibri', bold=True, size=13, color='0c1f3f')
+        ws2['A1'].alignment = center
+        ws2.row_dimensions[1].height = 24
+
+        header_row = 2
         for col, h in enumerate(['Flat No.','Owner','Amount (Rs.)','Date','Mode','Transaction ID','Status','Received By'], 1):
-            cell = ws2.cell(row=1, column=col, value=h)
+            cell = ws2.cell(row=header_row, column=col, value=h)
             cell.font=hdr_font; cell.fill=hdr_fill; cell.alignment=center; cell.border=border
 
-        for row_idx, pay in enumerate(Payment.objects.select_related('flat','flat__owner','received_by').order_by('-payment_date')[:500], start=2):
+        total_collected = 0
+        row_idx = header_row + 1
+        for pay in payments_qs[:1000]:
             owner = getattr(pay.flat,'owner',None)
             for col_idx, val in enumerate([
                 pay.flat.flat_number,
@@ -364,7 +435,24 @@ class ExportExcelView(APIView):
                 pay.status.upper(),
                 pay.received_by.get_full_name() if pay.received_by else '',
             ], 1):
-                ws2.cell(row=row_idx, column=col_idx, value=val)
+                cell = ws2.cell(row=row_idx, column=col_idx, value=val)
+                cell.border = border
+                cell.alignment = center
+                if col_idx == 3: cell.number_format = '#,##0.00'
+            if pay.status == 'completed':
+                total_collected += float(pay.amount)
+            row_idx += 1
+
+        # Total row
+        ws2.cell(row=row_idx, column=2, value='TOTAL COLLECTED').font = Font(bold=True)
+        ws2.cell(row=row_idx, column=2).alignment = center
+        ws2.cell(row=row_idx, column=2).border = border
+        total_cell = ws2.cell(row=row_idx, column=3, value=total_collected)
+        total_cell.font = Font(bold=True, color='15803d')
+        total_cell.number_format = '#,##0.00'
+        total_cell.alignment = center
+        total_cell.border = border
+        ws2.cell(row=row_idx, column=1).border = border
 
         for i in range(1,9):
             ws2.column_dimensions[openpyxl.utils.get_column_letter(i)].width = 18
@@ -373,6 +461,9 @@ class ExportExcelView(APIView):
         wb.save(output); output.seek(0)
         resp = HttpResponse(output,
             content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-        resp['Content-Disposition'] = f'attachment; filename="maintenance_{datetime.date.today()}.xlsx"'
+        filename_suffix = datetime.date.today().isoformat()
+        if month or year:
+            filename_suffix = f"{year or datetime.date.today().year}-{(month or '').zfill(2) if month else 'all'}"
+        resp['Content-Disposition'] = f'attachment; filename="maintenance_{filename_suffix}.xlsx"'
         resp['Access-Control-Allow-Origin'] = '*'
         return resp

@@ -64,8 +64,26 @@ class FlatViewSet(viewsets.ModelViewSet):
         status_filter = request.query_params.get('status')
         if status_filter in ['paid', 'pending', 'overdue']:
             qs = self.filter_by_status(qs, status_filter)
-        serializer = FlatListSerializer(qs, many=True)
-        return Response(serializer.data)
+        flats = FlatListSerializer(qs, many=True).data
+
+        # Hide phone and email from non-admin users
+        if not request.user.is_staff:
+            for flat in flats:
+                if flat.get('owner'):
+                    flat['owner']['phone'] = '🔒 Hidden'
+                    flat['owner']['email'] = '🔒 Hidden'
+        return Response(flats)
+
+    def retrieve(self, request, *args, **kwargs):
+        flat = self.get_object()
+        data = FlatDetailSerializer(flat).data
+
+        # Hide phone and email from non-admin users
+        if not request.user.is_staff:
+            if data.get('owner'):
+                data['owner']['phone'] = '🔒 Hidden'
+                data['owner']['email'] = '🔒 Hidden'
+        return Response(data)
 
     def create(self, request, *args, **kwargs):
         if not request.user.is_staff:
@@ -84,7 +102,12 @@ class FlatViewSet(viewsets.ModelViewSet):
 class FlatOwnerViewSet(viewsets.ModelViewSet):
     queryset = FlatOwner.objects.select_related('flat').all()
     serializer_class = FlatOwnerSerializer
-    permission_classes = [IsAuthenticated]
+
+    def get_permissions(self):
+        # Only admin can view/edit owner details (phone, email etc)
+        if self.action in ['list', 'retrieve', 'create', 'update', 'partial_update', 'destroy']:
+            return [IsAdminUser()]
+        return [IsAuthenticated()]
 
     def get_queryset(self):
         qs = super().get_queryset()
