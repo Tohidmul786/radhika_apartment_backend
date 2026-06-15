@@ -115,13 +115,13 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 50,
-     'DEFAULT_THROTTLE_CLASSES': [
+    'DEFAULT_THROTTLE_CLASSES': [
         'rest_framework.throttling.AnonRateThrottle',
         'rest_framework.throttling.UserRateThrottle',
     ],
     'DEFAULT_THROTTLE_RATES': {
-        'anon': '5/minute',   # 5 login attempts per minute
-        'user': '100/minute', # 100 API calls per minute for logged in users
+        'anon': '5/minute',
+        'user': '200/minute',
     }
 }
 
@@ -135,8 +135,21 @@ SIMPLE_JWT = {
 }
 
 # CORS — Allow frontend to call backend
-CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL_ORIGINS', default=True, cast=bool)
-CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS',default='http://localhost:3000,http://localhost:5173').split(',')
+CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL_ORIGINS', default=False, cast=bool)
+
+# If not using CORS_ALLOW_ALL_ORIGINS, specify allowed origins
+CORS_ALLOWED_ORIGINS = config(
+    'CORS_ALLOWED_ORIGINS',
+    default='http://localhost:3000,http://localhost:5173'
+).split(',')
+
+# Also allow any vercel.app and onrender.com subdomain
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://.*\.vercel\.app$",
+    r"^https://.*\.onrender\.com$",
+    r"^http://localhost:\d+$",
+]
+
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = [
     'accept',
@@ -160,20 +173,21 @@ CORS_ALLOW_METHODS = [
 
 # Trust proxy headers (needed on Render for HTTPS)
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS',default='https://*.onrender.com,https://*.vercel.app').split(',')
-CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS',default='https://*.onrender.com,https://*.vercel.app').split(',')
+CSRF_TRUSTED_ORIGINS = config(
+    'CSRF_TRUSTED_ORIGINS',
+    default='https://*.onrender.com,https://*.vercel.app'
+).split(',')
+
 # ── Email (Gmail SMTP) ────────────────────────────────────────────────
-# To use Gmail: enable 2-Step Verification on your Google account, then
-# create an "App Password" at https://myaccount.google.com/apppasswords
-# Use that 16-character app password as EMAIL_HOST_PASSWORD (NOT your normal password)
 EMAIL_BACKEND       = config('EMAIL_BACKEND', default='django.core.mail.backends.smtp.EmailBackend')
 EMAIL_HOST          = config('EMAIL_HOST', default='smtp.gmail.com')
 EMAIL_PORT          = config('EMAIL_PORT', default=587, cast=int)
 EMAIL_USE_TLS       = config('EMAIL_USE_TLS', default=True, cast=bool)
+EMAIL_USE_SSL       = config('EMAIL_USE_SSL', default=False, cast=bool)
 EMAIL_HOST_USER     = config('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL  = config('DEFAULT_FROM_EMAIL', default=EMAIL_HOST_USER)
+EMAIL_TIMEOUT       = 30
 
-# Frontend URL — included in reminder emails as a link to the portal
+# Frontend URL
 FRONTEND_URL = config('FRONTEND_URL', default='')
-
