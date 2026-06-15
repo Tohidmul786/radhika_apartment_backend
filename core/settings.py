@@ -134,12 +134,19 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
+<<<<<<< HEAD
 # CORS — Allow frontend to call backend
 CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL_ORIGINS', default=False, cast=bool)
 CORS_ALLOWED_ORIGINS = config(
     'CORS_ALLOWED_ORIGINS',
     default='http://localhost:3000,http://localhost:5173'
 ).split(',')
+=======
+# CORS
+# CORS# CORS
+CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL_ORIGINS', default=False, cast=bool)
+CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS',default='http://localhost:3000,http://localhost:5173').split(',')
+>>>>>>> 481a7b532f58ab961653c399463a46333b3f184d
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = [
     'accept',
@@ -161,6 +168,7 @@ CORS_ALLOW_METHODS = [
     'PUT',
 ]
 
+<<<<<<< HEAD
 # Trust proxy headers (needed on Render for HTTPS)
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 CSRF_TRUSTED_ORIGINS = config(
@@ -172,6 +180,13 @@ CSRF_TRUSTED_ORIGINS = config(
 # To use Gmail: enable 2-Step Verification on your Google account, then
 # create an "App Password" at https://myaccount.google.com/apppasswords
 # Use that 16-character app password as EMAIL_HOST_PASSWORD (NOT your normal password)
+=======
+# Trust proxy headers
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS',default='https://*.onrender.com,https://*.vercel.app').split(',')
+
+# ── Email (Gmail SMTP) ────────────────────────────────────────────────
+>>>>>>> 481a7b532f58ab961653c399463a46333b3f184d
 EMAIL_BACKEND       = config('EMAIL_BACKEND', default='django.core.mail.backends.smtp.EmailBackend')
 EMAIL_HOST          = config('EMAIL_HOST', default='smtp.gmail.com')
 EMAIL_PORT          = config('EMAIL_PORT', default=587, cast=int)
@@ -179,7 +194,11 @@ EMAIL_USE_TLS       = config('EMAIL_USE_TLS', default=True, cast=bool)
 EMAIL_HOST_USER     = config('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL  = config('DEFAULT_FROM_EMAIL', default=EMAIL_HOST_USER)
+<<<<<<< HEAD
 
 # Frontend URL — included in reminder emails as a link to the portal
 FRONTEND_URL = config('FRONTEND_URL', default='')
 
+=======
+FRONTEND_URL = config('FRONTEND_URL', default='')
+>>>>>>> 481a7b532f58ab961653c399463a46333b3f184d
