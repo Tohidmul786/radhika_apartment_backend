@@ -8,10 +8,7 @@ from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import cm
-from reportlab.platypus import (
-    SimpleDocTemplate, Table, TableStyle, Paragraph,
-    Spacer, HRFlowable
-)
+from reportlab.platypus import (SimpleDocTemplate, Table, TableStyle, Paragraph,Spacer, HRFlowable)
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 

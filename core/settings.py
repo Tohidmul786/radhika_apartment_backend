@@ -135,11 +135,8 @@ SIMPLE_JWT = {
 }
 
 # CORS — Allow frontend to call backend
-CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL_ORIGINS', default=False, cast=bool)
-CORS_ALLOWED_ORIGINS = config(
-    'CORS_ALLOWED_ORIGINS',
-    default='http://localhost:3000,http://localhost:5173'
-).split(',')
+CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL_ORIGINS', default=True, cast=bool)
+CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS',default='http://localhost:3000,http://localhost:5173').split(',')
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = [
     'accept',
@@ -163,11 +160,8 @@ CORS_ALLOW_METHODS = [
 
 # Trust proxy headers (needed on Render for HTTPS)
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-CSRF_TRUSTED_ORIGINS = config(
-    'CSRF_TRUSTED_ORIGINS',
-    default='https://*.onrender.com,https://*.vercel.app'
-).split(',')
-
+CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS',default='https://*.onrender.com,https://*.vercel.app').split(',')
+CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS',default='https://*.onrender.com,https://*.vercel.app').split(',')
 # ── Email (Gmail SMTP) ────────────────────────────────────────────────
 # To use Gmail: enable 2-Step Verification on your Google account, then
 # create an "App Password" at https://myaccount.google.com/apppasswords
