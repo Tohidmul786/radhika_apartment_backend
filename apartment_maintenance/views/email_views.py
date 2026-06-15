@@ -1,22 +1,13 @@
 import io
 import datetime
-<<<<<<< HEAD
 import logging
 
 from django.core.mail import EmailMessage, send_mail
-=======
-
-from django.core.mail import EmailMessage
->>>>>>> 481a7b532f58ab961653c399463a46333b3f184d
 from django.conf import settings
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
-<<<<<<< HEAD
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
-=======
-from rest_framework.permissions import IsAdminUser
->>>>>>> 481a7b532f58ab961653c399463a46333b3f184d
 from rest_framework import status
 
 from reportlab.lib.pagesizes import A4
@@ -29,17 +20,11 @@ from reportlab.platypus import (
 
 from apartment_maintenance.models import Flat
 
-<<<<<<< HEAD
 logger = logging.getLogger(__name__)
 
 
 # ── Build Receipt PDF ─────────────────────────────────────────────────
 def build_receipt_pdf_bytes(flat):
-=======
-
-def build_receipt_pdf_bytes(flat):
-    """Generate the same receipt PDF as FlatReceiptPDFView, return raw bytes."""
->>>>>>> 481a7b532f58ab961653c399463a46333b3f184d
     owner    = getattr(flat, 'owner', None)
     payments = flat.payments.filter(status='completed').order_by('-payment_date')[:10]
 
@@ -59,14 +44,7 @@ def build_receipt_pdf_bytes(flat):
                   ParagraphStyle('R', alignment=2, parent=styles['Normal'])),
     ]]
     header_tbl = Table(header_data, colWidths=[12*cm, 6*cm])
-<<<<<<< HEAD
     header_tbl.setStyle(TableStyle([('VALIGN',(0,0),(-1,-1),'TOP'),('BOTTOMPADDING',(0,0),(-1,-1),12)]))
-=======
-    header_tbl.setStyle(TableStyle([
-        ('VALIGN',(0,0),(-1,-1),'TOP'),
-        ('BOTTOMPADDING',(0,0),(-1,-1),12),
-    ]))
->>>>>>> 481a7b532f58ab961653c399463a46333b3f184d
     story.append(header_tbl)
     story.append(HRFlowable(width="100%", thickness=2, color=colors.HexColor('#1a56db')))
     story.append(Spacer(1,16))
@@ -98,11 +76,7 @@ def build_receipt_pdf_bytes(flat):
 
     bal_bg = colors.HexColor('#dcfce7') if sc=='paid' else colors.HexColor('#fee2e2') if sc=='overdue' else colors.HexColor('#fef9c3')
     bal_data = [[
-<<<<<<< HEAD
         Paragraph(f'<b><font size=11>Outstanding Balance</font></b><br/>'
-=======
-        Paragraph(f'<b><font size=11>Outstanding Balance</font></b><br/><br/>'
->>>>>>> 481a7b532f58ab961653c399463a46333b3f184d
                   f'<font size=22 color="{bal_color}"><b>Rs. {flat.total_balance:,.0f}</b></font>',
                   styles['Normal']),
         Paragraph(f'<font size=9 color="grey">Pending Months: <b>{int(flat.total_balance/flat.monthly_maintenance) if flat.total_balance>0 else 0}</b><br/>'
@@ -128,16 +102,8 @@ def build_receipt_pdf_bytes(flat):
         pay_data = [pay_headers]
         for i, pay in enumerate(payments,1):
             pay_data.append([
-<<<<<<< HEAD
                 str(i), pay.payment_date.strftime('%d/%m/%Y'), f'{pay.amount:,.0f}',
                 pay.payment_mode.upper(), pay.transaction_id or '—',
-=======
-                str(i),
-                pay.payment_date.strftime('%d/%m/%Y'),
-                f'{pay.amount:,.0f}',
-                pay.payment_mode.upper(),
-                pay.transaction_id or '—',
->>>>>>> 481a7b532f58ab961653c399463a46333b3f184d
                 pay.received_by.get_full_name() if pay.received_by else 'Admin',
             ])
         pay_tbl = Table(pay_data, colWidths=[1*cm,3.5*cm,4*cm,3*cm,4*cm,3*cm])
@@ -160,12 +126,7 @@ def build_receipt_pdf_bytes(flat):
     story.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor('#e2e8f0')))
     story.append(Spacer(1,8))
     story.append(Paragraph(
-<<<<<<< HEAD
         '<font size=8 color="grey">This is a computer-generated receipt. For queries contact the society office.</font>',
-=======
-        '<font size=8 color="grey">This is a computer-generated receipt. '
-        'For queries contact the society office.</font>',
->>>>>>> 481a7b532f58ab961653c399463a46333b3f184d
         ParagraphStyle('Footer', alignment=1, parent=styles['Normal'])))
 
     doc.build(story)
@@ -178,24 +139,15 @@ def reminder_email_body(flat, owner):
     portal_url = getattr(settings, 'FRONTEND_URL', '')
     body = f"""Dear {owner.name},
 
-<<<<<<< HEAD
 This is a friendly reminder regarding your maintenance dues for Flat {flat.flat_number}, Radhika Apartment Co-op Housing Society.
 
 Outstanding Balance : Rs. {flat.total_balance:,.0f}
 Pending Months      : {months}
 Monthly Charge      : Rs. {flat.monthly_maintenance:,.0f}
-=======
-This is a friendly reminder regarding your maintenance dues for Flat {flat.flat_number}, Radhika Apartment.
-
-Outstanding Balance: Rs. {flat.total_balance:,.0f}
-Pending Months: {months}
-Monthly Charge: Rs. {flat.monthly_maintenance:,.0f}
->>>>>>> 481a7b532f58ab961653c399463a46333b3f184d
 
 Please clear the dues at the earliest. A detailed receipt is attached to this email for your reference.
 """
     if portal_url:
-<<<<<<< HEAD
         body += f"\nYou can check your balance anytime at: {portal_url}\n"
     body += "\nThank you,\nRadhika Apartment Co-op Housing Society"
     return body
@@ -263,19 +215,10 @@ class TestEmailView(APIView):
 
 
 # ── SEND REMINDER TO ALL OVERDUE ──────────────────────────────────────
-=======
-        body += f"\nYou can also check your balance anytime at: {portal_url}\n"
-    body += "\nThank you,\nRadhika Apartment"
-    return body
-
-
-# ── ADMIN: Send reminder to ALL overdue/pending flats ──────────────────
->>>>>>> 481a7b532f58ab961653c399463a46333b3f184d
 class SendOverdueRemindersView(APIView):
     permission_classes = [IsAdminUser]
 
     def post(self, request):
-<<<<<<< HEAD
         status_filter = request.data.get('status', 'overdue')
         wing_filter   = request.data.get('wing')
 
@@ -298,20 +241,6 @@ class SendOverdueRemindersView(APIView):
 
         if wing_filter:
             flats = [f for f in flats if f.wing.name == wing_filter.upper()]
-=======
-        # Optional filters: status=overdue|pending|all (default overdue), wing=A|B
-        status_filter = request.data.get('status', 'overdue')
-        wing_filter    = request.data.get('wing')
-
-        flats = (Flat.objects.select_related('wing','floor','owner')
-                 .prefetch_related('payments','maintenance_dues')
-                 .order_by('wing__name','floor__number','room_number'))
-
-        if wing_filter:
-            flats = [f for f in flats if f.wing.name == wing_filter.upper()]
-        else:
-            flats = list(flats)
->>>>>>> 481a7b532f58ab961653c399463a46333b3f184d
 
         if status_filter != 'all':
             flats = [f for f in flats if f.payment_status == status_filter]
@@ -320,7 +249,6 @@ class SendOverdueRemindersView(APIView):
 
         for flat in flats:
             owner = getattr(flat, 'owner', None)
-<<<<<<< HEAD
 
             if not owner:
                 skipped.append({'flat': flat.flat_number, 'reason': 'No owner record'})
@@ -330,19 +258,11 @@ class SendOverdueRemindersView(APIView):
                 continue
             if flat.total_balance <= 0:
                 skipped.append({'flat': flat.flat_number, 'reason': 'No balance due'})
-=======
-            if not owner or not owner.email:
-                skipped.append(flat.flat_number)
-                continue
-            if flat.total_balance <= 0:
-                skipped.append(flat.flat_number)
->>>>>>> 481a7b532f58ab961653c399463a46333b3f184d
                 continue
 
             try:
                 pdf_bytes = build_receipt_pdf_bytes(flat)
                 email = EmailMessage(
-<<<<<<< HEAD
                     subject=f"Maintenance Due Reminder — Flat {flat.flat_number} | Radhika Apartment",
                     body=reminder_email_body(flat, owner),
                     from_email=settings.DEFAULT_FROM_EMAIL,
@@ -360,18 +280,6 @@ class SendOverdueRemindersView(APIView):
                 error_msg = str(e)
                 logger.error(f"Failed to send reminder for {flat.flat_number}: {error_msg}")
                 failed.append({'flat': flat.flat_number, 'error': error_msg})
-=======
-                    subject=f"Maintenance Due Reminder - Flat {flat.flat_number} | Radhika Apartment",
-                    body=reminder_email_body(flat, owner),
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    to=[owner.email],
-                )
-                email.attach(f"receipt_{flat.flat_number}.pdf", pdf_bytes, "application/pdf")
-                email.send(fail_silently=False)
-                sent.append(flat.flat_number)
-            except Exception as e:
-                failed.append({'flat': flat.flat_number, 'error': str(e)})
->>>>>>> 481a7b532f58ab961653c399463a46333b3f184d
 
         return Response({
             'sent_count':    len(sent),
@@ -383,16 +291,11 @@ class SendOverdueRemindersView(APIView):
         })
 
 
-<<<<<<< HEAD
 # ── SEND REMINDER TO SINGLE FLAT ─────────────────────────────────────
-=======
-# ── ADMIN: Send reminder to a SINGLE flat ───────────────────────────────
->>>>>>> 481a7b532f58ab961653c399463a46333b3f184d
 class SendSingleReminderView(APIView):
     permission_classes = [IsAdminUser]
 
     def post(self, request, flat_number):
-<<<<<<< HEAD
         # Validate email config first
         if not getattr(settings, 'EMAIL_HOST_USER', ''):
             return Response(
@@ -415,22 +318,10 @@ class SendSingleReminderView(APIView):
             return Response({'error': 'No owner record for this flat.'}, status=status.HTTP_400_BAD_REQUEST)
         if not owner.email or owner.email.strip() == '':
             return Response({'error': 'No email address on file for this flat owner. Please update the owner email first in Admin panel.'}, status=status.HTTP_400_BAD_REQUEST)
-=======
-        try:
-            flat = Flat.objects.select_related('wing','floor','owner').get(flat_number=flat_number)
-        except Flat.DoesNotExist:
-            return Response({'error':'Flat not found'}, status=status.HTTP_404_NOT_FOUND)
-
-        owner = getattr(flat, 'owner', None)
-        if not owner or not owner.email:
-            return Response({'error':'No email address on file for this flat.'},
-                             status=status.HTTP_400_BAD_REQUEST)
->>>>>>> 481a7b532f58ab961653c399463a46333b3f184d
 
         try:
             pdf_bytes = build_receipt_pdf_bytes(flat)
             email = EmailMessage(
-<<<<<<< HEAD
                 subject=f"Maintenance Receipt — Flat {flat.flat_number} | Radhika Apartment",
                 body=reminder_email_body(flat, owner),
                 from_email=settings.DEFAULT_FROM_EMAIL,
@@ -453,16 +344,3 @@ class SendSingleReminderView(APIView):
             'flat': flat.flat_number,
             'owner': owner.name,
         })
-=======
-                subject=f"Maintenance Receipt - Flat {flat.flat_number} | Radhika Apartment",
-                body=reminder_email_body(flat, owner),
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                to=[owner.email],
-            )
-            email.attach(f"receipt_{flat.flat_number}.pdf", pdf_bytes, "application/pdf")
-            email.send(fail_silently=False)
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_502_BAD_GATEWAY)
-
-        return Response({'message': f'Email sent to {owner.email}'})
->>>>>>> 481a7b532f58ab961653c399463a46333b3f184d
