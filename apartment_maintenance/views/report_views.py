@@ -168,8 +168,7 @@ class FlatReceiptPDFView(APIView):
         # ── Header ──
         header_data = [[
             Paragraph('<b><font size=14 color="#0c1f3f">Radhika Apartment</font></b><br/>'
-                      '<font size=8 color="grey">Co-op Housing Society (Niyojit)</font><br/>'
-                      '<font size=7 color="grey">New Ganesh Nagar, Hazimalang Road, Adiwali, Kalyan (East) - 421306</font>',
+                      '<font size=7 color="grey">New Ganesh Nagar, Hajimalang Road, Adiwali, Kalyan (East) - 421306</font>',
                       styles['Normal']),
             Paragraph(f'<b><font size=22 color="#1a56db">RECEIPT</font></b><br/>'
                       f'<font size=8 color="grey">Date: {datetime.date.today().strftime("%d %B %Y")}</font>',
@@ -213,7 +212,7 @@ class FlatReceiptPDFView(APIView):
         # ── Outstanding Balance Box ──
         bal_bg = colors.HexColor('#dcfce7') if sc=='paid' else colors.HexColor('#fee2e2') if sc=='overdue' else colors.HexColor('#fef9c3')
         bal_data = [[
-            Paragraph(f'<b><font size=11>Outstanding Balance</font></b><br/>'
+            Paragraph(f'<b><font size=11>Outstanding Balance</font></b><br/><br/>'
                       f'<font size=22 color="{bal_color}"><b>Rs. {flat.total_balance:,.0f}</b></font>',
                       styles['Normal']),
             Paragraph(f'<font size=9 color="grey">Pending Months: <b>{int(flat.total_balance/flat.monthly_maintenance) if flat.total_balance>0 else 0}</b><br/>'
